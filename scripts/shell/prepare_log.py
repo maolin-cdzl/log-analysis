@@ -148,7 +148,8 @@ if __name__ == '__main__':
     
     fonlines = open('onlines.log','w')
     fspeaks = open('speaks.log','w')
-    proc(logfiles[0])
+    for f in logfiles:
+        proc(f)
     fonlines.close()
     fspeaks.close()
     
