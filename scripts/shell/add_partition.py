@@ -20,7 +20,7 @@ def get_sorted_partitions(start,stop):
 
 def generate_sql(table,path,partitions):
     for p in partitions:
-        print("alter table %s add partition (day=\'%s\') location \'%s/%s\'" % (table,p,path,p))
+        print("alter table %s add partition (day=\'%s\') location \'%s/%s\';" % (table,p,path,p))
 
 TABLES =[ 
         ('login_daily','/echat/log/login'),
