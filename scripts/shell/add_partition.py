@@ -1,30 +1,37 @@
 #coding:utf-8
 #!/usr/bin/python
 
-from __future__ import print_function
 import sys
 reload(sys) 
 sys.setdefaultencoding('utf-8')
 import os
+from datetime import datetime,timedelta
 
-def get_sorted_partitions(path):
+def get_sorted_partitions(start,stop):
+    oneday = timedelta(days=1)
+    day = datetime.strptime(start,"%Y-%m-%d").date()
+    stopday = datetime.strptime(stop,"%Y-%m-%d").date()
     partitions=[]
-    for dirpath,dirs,files in os.walk(path):
-        for d in dirs:
-            partitions.append(d)
 
-    partitions.sort()
+    while day <= stopday:
+        partitions.append( day.strftime('%Y-%m-%d') )
+        day = day + oneday
     return partitions 
 
-def generate_sql(root,table,subdir):
-    path = ("%s/%s" %(root,subdir))
-    partitions = get_sorted_partitions(path)
+def generate_sql(table,path,partitions):
     for p in partitions:
-        print("alter table %s add partition (day=\'%s\') location \'/echat/log/%s/%s\'" % (table,p,subdir,p))
+        print("alter table %s add partition (day=\'%s\') location \'%s/%s\'" % (table,p,path,p))
 
-ROOT='/media/FUN/echat/log'
-LOGDIRS=[ ('login_daily','login'),('logout_daily','logout'),('onlines_daily','onlines'),('speaks_daily','speaks'),('join_group_daily','joingroup'),('leave_group_daily','leavegroup'),('call_daily','call')]
+TABLES =[ 
+        ('login_daily','/echat/log/login'),
+        ('logout_daily','/echat/log/logout'),
+        ('onlines_daily','/echat/log/onlines'),
+        ('speaks_daily','/echat/log/speaks'),
+        ('join_group_daily','/echat/log/joingroup'),
+        ('leave_group_daily','/echat/log/leavegroup'),
+        ('call_daily','/echat/log/call')]
 
 if __name__ == '__main__':
-    for it in LOGDIRS:
-        generate_sql(ROOT,it[0],it[1])
+    partitions = get_sorted_partitions(sys.argv[1],sys.argv[2])
+    for it in TABLES:
+        generate_sql(it[0],it[1],partitions)
