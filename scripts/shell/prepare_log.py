@@ -14,7 +14,7 @@ import IP
 
 global ROOT
 global PREFIX
-SITE_NAME = "0001"
+SITE_NAME = "0002"
 PREFIX = 'echat.log.'
 ROOT = '.'
 OUTDIR = 'echat/logs'
@@ -275,17 +275,18 @@ def analysis(dt,action,content):
         
 
 def proc(filepath):
-    while open(filepath,'r') as f:
-        lines = f.readlines(10000)
-        if not lines:
-            break
-        for line in lines:
-            try:
-                dt,action,content = parse(line)
-                if action:
-                    analysis(dt,action,content)
-            except:
-                print('Error when line: %s' % line)
+    with open(filepath,'r') as f:
+        while 1:
+            lines = f.readlines(10000)
+            if not lines:
+                break
+            for line in lines:
+                try:
+                    dt,action,content = parse(line)
+                    if action:
+                        analysis(dt,action,content)
+                except:
+                    print('Error when line: %s' % line)
 
 def get_date_of_file(f):
     m = DatePattern.search(f)
