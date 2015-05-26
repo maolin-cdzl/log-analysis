@@ -14,7 +14,7 @@ import IP
 
 global ROOT
 global PREFIX
-SITE_NAME = "0002"
+SITE_NAME = "0001"
 PREFIX = 'echat.log.'
 ROOT = '.'
 OUTDIR = 'echat/logs'
@@ -70,7 +70,7 @@ class DailyPartitionFile:
     def passday(self,day):
         assert(self.today is not None)
         assert(self.file_today is not None)
-        print("%s update partition to %s" % (self.path,day.isoformat()))
+        #print("%s update partition to %s" % (self.path,day.isoformat()))
 
         days = self.file_old.keys()
         if len(days) > 10:
@@ -159,6 +159,12 @@ speaking = {}
 
 global fonlines,fspeaks,flogin,flogout,fjoin,fleave,fcall
 
+def log_online(dt,tstart,uid):
+    if dt > tstart:
+        fonlines.write(tstart.date(),('%s\t%s\t%s\t%d' % (uid,tstart.isoformat(),dt.isoformat(),(dt - tstart).total_seconds())))
+    else:
+        print('ERROR LOGOUT %s\t%s\t%s' % (uid,tstart.isoformat(),dt.isoformat()))
+
 def login(dt,action,content):
     matchs = LoginPattern.match(content)
     if matchs is not None:
@@ -180,6 +186,11 @@ def login(dt,action,content):
 
         if not onlines.has_key(uid):
             onlines[uid] = dt
+        elif isre == 0 :
+            tstart = onlines[uid]
+            if (dt - tstart).total_seconds() < 300:
+                log_online(dt,tstart,uid)
+            onlines[uid] = dt
 
 
 def logout(dt,action,content):
@@ -190,12 +201,14 @@ def logout(dt,action,content):
 
         if onlines.has_key(uid):
             t0 = onlines[uid]
-            if dt > t0:
-                fonlines.write(t0.date(),('%s\t%s\t%s\t%d' % (uid,t0.isoformat(),dt.isoformat(),(dt - t0).total_seconds())))
-            else:
-                print('ERROR LOGOUT %s\t%s\t%s' % (uid,t0.isoformat(),dt.isoformat()))
+            log_online(dt,t0,uid)
             del onlines[uid]
 
+def log_speaks(dt,tstart,gid,uid):
+    if dt >= tstart:
+        fspeaks.write(tstart.date(),('%s\t%s\t%s\t%s\t%d' % (gid,uid,tstart.isoformat(),dt.isoformat(),(dt - tstart).total_seconds() * 1000)))
+    else:
+        print('ERROR speak time: %s\t%s\t%s\t%s' % (gid,uid,tstart.isoformat(),dt.isoformat()))
 
 def getmic(dt,action,content):
     matchs = GetMicPattern.match(content)
@@ -205,6 +218,13 @@ def getmic(dt,action,content):
         key = (gid,uid)
         if not speaking.has_key(key):
             speaking[key] = dt
+        else:
+            tstart = speaking[key]
+            if (dt - tstart).total_seconds() < 30:
+                log_speaks(dt,tstart,gid,uid)
+            speaking[key] = dt
+
+
 
 def lostmic(dt,action,content):
     matchs = LostMicPattern.match(content)
@@ -214,10 +234,7 @@ def lostmic(dt,action,content):
         key = (gid,uid)
         if speaking.has_key(key):
             t0 = speaking[key]
-            if dt >= t0:
-                fspeaks.write(t0.date(),('%s\t%s\t%s\t%s\t%d' % (gid,uid,t0.isoformat(),dt.isoformat(),(dt - t0).total_seconds() * 1000)))
-            else:
-                print('ERROR speak time: %s\t%s\t%s\t%s' % (gid,uid,t0.isoformat(),dt.isoformat()))
+            log_speaks(dt,t0,gid,uid)
             del speaking[key]
 
 def joingroup(dt,action,content):
